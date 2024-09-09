@@ -3,6 +3,7 @@ import {NextResponse} from 'next/server';
 import {PrismaClient} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+// This file holds the Arcjet security protection for our login route. Rate limiting is also in place for users who try to sign in too many times
 
 const prisma = new PrismaClient();
 
