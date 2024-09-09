@@ -16,7 +16,7 @@ const aj = arcjet({
     key: process.env.ARCJET_KEY!,
     rules: [
         detectBot({
-            mode: 'LIVE', // Block automated clients,
+            mode: 'LIVE', // Block automated clients
             // @ts-ignore
             block: ['AUTOMATED']
         })
