@@ -34,6 +34,7 @@ const aj = arcjet({
 });
 
 export async function POST(req: NextRequest){
+    console.log("process.env.ARCJET_KEY!=",process.env.ARCJET_KEY!)
     // Parse: the request body
     const {name, email, password} = await req.json();
 

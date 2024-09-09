@@ -25,6 +25,7 @@ const aj = arcjet({
 
 export async function POST(req: NextRequest){
     const decision = await aj.protect(req);
+    console.log("process.env.ARCJET_KEY!=",process.env.ARCJET_KEY!)
     console.log('Arcjet decision: ', decision);
 
     if(decision.isDenied()){

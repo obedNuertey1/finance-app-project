@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(request: NextRequest){
+    console.log("process.env.ARCJET_KEY!=",process.env.ARCJET_KEY!)
     try{
         const {userId} = await request.json();
 

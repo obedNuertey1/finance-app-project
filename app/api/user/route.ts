@@ -21,6 +21,7 @@ function getUserIdFromToken(token: string){
 }
 
 export async function GET(req: Request){
+    console.log("process.env.ARCJET_KEY!=",process.env.ARCJET_KEY!)
     const authHeader = req.headers.get('Authorization');
     if(!authHeader || !authHeader.startsWith('Bearer ')){
         return NextResponse.json({error: 'Unauthorized'}, {status: 401});
