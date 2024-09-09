@@ -1,7 +1,7 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import Header from "../components/Header";
+'use client';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Header from '../components/Header';
 interface UserInfo {
   name: string;
   email: string;
@@ -10,17 +10,16 @@ interface UserInfo {
 }
 
 export default function TransactionPage() {
-  const [recipientAccount, setRecipientAccount] = useState<string>("");
-  const [amount, setAmount] = useState<number>(0);
-  const [message, setMessage] = useState<string>("");
+  const [recipientAccount, setRecipientAccount] = useState('');
+  const [amount, setAmount] = useState(0);
+  const [message, setMessage] = useState('');
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
     if (!token) {
-      router.push("/signin");
+      router.push('/signin');
     } else {
       fetchUserInfo(token);
     }
@@ -28,7 +27,7 @@ export default function TransactionPage() {
 
   const fetchUserInfo = async (token: string) => {
     try {
-      const res = await fetch("/api/user", {
+      const res = await fetch('/api/user', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -38,56 +37,56 @@ export default function TransactionPage() {
         setUserInfo(data);
       } else {
         // Token might be invalid or expired
-        localStorage.removeItem("token");
-        router.push("/signin");
+        localStorage.removeItem('token');
+        router.push('/signin');
       }
     } catch (error) {
-      console.error("Error fetching user info:", error);
-      setMessage("Error fetching user information");
+      console.error('Error fetching user info:', error);
+      setMessage('Error fetching user information');
     }
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem("token");
-    router.push("/signin");
+    localStorage.removeItem('token');
+    router.push('/signin');
   };
 
   const handleTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-
+    const token = localStorage.getItem('token');
     if (!token) {
-      router.push("/signin");
+      router.push('/signin');
       return;
     }
 
-    const res = await fetch("/api/transaction", {
-      method: "POST",
+    const res = await fetch('/api/transaction', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        body: JSON.stringify({ recipientAccount, amount }),
       },
+      body: JSON.stringify({ recipientAccount, amount }),
     });
 
     if (res.ok && amount > 0) {
-      setMessage("Transaction successful!");
+      setMessage('Transaction successful!');
       fetchUserInfo(token); // Refresh user info after successful transaction
-      setRecipientAccount("");
+      setRecipientAccount('');
       setAmount(0);
     } else if (amount <= 0) {
-      setMessage("Error: The amount you send. needs to be higher than 0");
+      setMessage(`Error: The amount you send, needs to be higher than 0`);
     } else {
       const errorData = await res.json();
       setMessage(`Error: ${errorData.error}`);
     }
   };
+
   if (!userInfo) {
     return <p>Loading...</p>;
   }
 
   return (
-    <>
+    <div>
       <div>
         <Header />
       </div>
@@ -107,7 +106,7 @@ export default function TransactionPage() {
         >
           Sign Out
         </button>
-        <form onSubmit={handleTransaction}>
+        <form onSubmit={handleTransaction} className="space-y-4">
           <input
             type="text"
             value={recipientAccount}
@@ -131,6 +130,6 @@ export default function TransactionPage() {
         </form>
         {message && <p className="mt-4 text-center font-bold">{message}</p>}
       </div>
-    </>
+    </div>
   );
 }

@@ -14,36 +14,36 @@ const prisma = new PrismaClient();
 const aj = arcjet({
     key: process.env.ARCJET_KEY!,
     rules: [
-        protectSignup({
-            email: {
-                mode: 'LIVE',
-                block: ['DISPOSABLE', 'INVALID', 'NO_MX_RECORDS'],
-            },
-            bots: {
-                mode: 'LIVE', // Actively block invalid, disposable, or no MX record emails
-                // @ts-ignore
-                block: ['AUTOMATED']
-            },
-            rateLimit: {
-                mode: 'LIVE', // Actively enforce rate limits
-                interval: '2m', // Sliding window of 2 minutes
-                max: 5, // Maximum 5 submissions in the interval
-            }
-        })
-    ]
-});
+      protectSignup({
+        email: {
+          mode: 'LIVE', // Actively block invalid, disposable, or no MX record emails
+          block: ['DISPOSABLE', 'INVALID', 'NO_MX_RECORDS'],
+        },
+        bots: {
+          mode: 'LIVE', // Block clients identified as automated
+        //   @ts-ignore
+          block: ['AUTOMATED'],
+        },
+        rateLimit: {
+          mode: 'LIVE', // Actively enforce rate limits
+          interval: '2m', // Sliding window of 2 minutes
+          max: 5, // Maximum 5 submissions in the interval
+        },
+      }),
+    ],
+  });
 
 export async function POST(req: NextRequest){
-    console.log("process.env.ARCJET_KEY!=",process.env.ARCJET_KEY!)
     // Parse: the request body
     const {name, email, password} = await req.json();
-
+    console.log({email})
     // Apply Arcjet protection to the signup route
     const decision = await aj.protect(req, {email});
 
     if(decision.isDenied()){
         if(decision.reason.isEmail()){
             let message: string;
+
             if(decision.reason.emailTypes.includes('INVALID')){
                 message = 'Email address format is invalid. Is there a typo?';
             }else if(decision.reason.emailTypes.includes('DISPOSABLE')){
@@ -53,24 +53,42 @@ export async function POST(req: NextRequest){
             }else{
                 message = 'Invalid email address';
             }
-            return NextResponse.json({message,reason: decision.reason}, {status: 400});
-        }
-    }else if( decision.reason.isRateLimit()){
-        const reset = decision.reason.resetTime;
-
-        if(reset === undefined){
             return NextResponse.json(
-                {
-                    message: "Too many requests. Please try again later.",
-                reason: decision.reason,
-                },
-                {status: 429}
+                {message,reason: decision.reason}, 
+                {status: 400}
             );
-        }
-    }else{
-        return NextResponse.json({message: 'Forbidden'}, {status: 403})
-    }
+        }else if( decision.reason.isRateLimit()){
+            const reset = decision.reason.resetTime;
+    
+            if(reset === undefined){
+                return NextResponse.json(
+                    {
+                        message: "Too many requests. Please try again later.",
+                    reason: decision.reason,
+                    },
+                    {status: 429}
+                );
+            }
 
+            // Calculate time until the rate limit resets
+            const seconds = Math.floor((reset.getTime() - Date.now()) / 1000);
+            const minutes = Math.ceil(seconds / 60);
+
+            if(minutes > 1){
+                return NextResponse.json({
+                    message: `Too many requests. Please try again in ${minutes} minutes.`,
+                    reason: decision.reason,
+                }, {status: 429});
+            }else {
+                return NextResponse.json(
+                    {message: `Too many requests. Please try again in ${seconds} seconds.`, reason: decision.reason},
+                    {status: 429}
+                );
+            }
+        }else{
+            return NextResponse.json({message: 'Forbidden'}, {status: 403})
+        }
+    }
     // Process with signup logic
     const hashedPassword = bcrypt.hashSync(password, 10);
 
