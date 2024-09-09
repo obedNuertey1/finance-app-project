@@ -1,6 +1,6 @@
-import {NextResponse} from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import jwt from "jsonwebtoken";
 
 /**
  * This is another one of the POST request routes used for sending money from one user account to another.
@@ -10,62 +10,66 @@ import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
 
-function getUserIdFromToken(token: string){
-    try{
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number };
-        return decoded.userId;
-    }catch(error){
-        return null;
-    }
+function getUserIdFromToken(token: string) {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      userId: number;
+    };
+    return decoded.userId;
+  } catch (error) {
+    return null;
+  }
 }
 
-export async function POST(req: Request){
-    const authHeader = req.headers.get('Authorization');
-    
-    if(!authHeader || !authHeader.startsWith('Bearer')){
-        return NextResponse.json({error: 'Unauthorized'}, {status: 401});
-    }
+export async function POST(req: Request) {
+  const authHeader = req.headers.get("Authorization");
 
-    const token = authHeader.split(' ')[1];
-    const userId = getUserIdFromToken(token);
-    if(!userId){
-        return NextResponse.json({
-            error: 'Invalid token'
-        }, {status: 401});
-    }
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    const {recipientAccount, amount} = await req.json();
+  const token = authHeader.split(" ")[1];
+  const userId = getUserIdFromToken(token);
+  if (!userId) {
+    return NextResponse.json(
+      {
+        error: "Invalid token",
+      },
+      { status: 401 }
+    );
+  }
 
-    const sender = await prisma.user.findUnique({
-        where: {id: userId}
-    });
-    const recipient = await prisma.user.findUnique({
-        where: {accountNumber: recipientAccount}
-    })
+  const { recipientAccount, amount } = await req.json();
 
-    if(!sender || !recipient){
-        return NextResponse.json({error: 'Account not found'});
-    }
+  const sender = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+  const recipient = await prisma.user.findUnique({
+    where: { accountNumber: recipientAccount },
+  });
 
-    if(sender.balance < amount){
-        return NextResponse.json(
-            {
-                error: "Insufficient balance",
-                
-            },
-            {status: 400}
-        );
-    }
+  if (!sender || !recipient) {
+    return NextResponse.json({ error: "Account not found" });
+  }
 
-    await prisma.user.update({
-        where: {id: sender.id},
-        data: {balance: {decrement: amount}}
-    });
+  if (sender.balance < amount) {
+    return NextResponse.json(
+      {
+        error: "Insufficient balance",
+      },
+      { status: 400 }
+    );
+  }
 
-    await prisma.user.update({
-        where: {id: recipient.id},
-        data: {balance: {increment: amount}}
-    });
+  await prisma.user.update({
+    where: { id: sender.id },
+    data: { balance: { decrement: amount } },
+  });
 
-    return NextResponse.json({message: 'Transaction successfull'});
+  await prisma.user.update({
+    where: { id: recipient.id },
+    data: { balance: { increment: amount } },
+  });
+
+  return NextResponse.json({ message: "Transaction successfull" });
 }
